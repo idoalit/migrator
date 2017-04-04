@@ -175,7 +175,7 @@ if (isset($_GET['data']) && !empty($_GET['data']) || isset($argv)) {
     for ($i=0; $i < $loop_for; $i++) {
       $dari = ($i*$limit) + 1;
       $sampai = ($biblio_count < ($i+1)*$limit) ? $biblio_count : $dari + $limit - 1 ;
-      Pindah::debug('Memproses data biblio dari cantuman ke ' . $dari . ' sampai ' . $sampai);
+      Pindah::debug('Memproses data biblio dari cantuman dari ' . $dari . ' sampai ' . $sampai . ' dari total ' . $biblio_count);
       $biblio = $obj_a->get('biblio', $limit, $i*$limit);
       $_return['count']['biblio'] = 0;
       $_return['count']['biblio_author'] = 0;
@@ -232,6 +232,10 @@ if (isset($_GET['data']) && !empty($_GET['data']) || isset($argv)) {
     Pindah::debug('Memproses data bibliografi di database yang baru');
     $bn = 0;
     foreach ($biblio_ids as $b_ID){
+
+      if ($b_ID['new'] == '' || empty($b_ID['new']) || is_null($b_ID['new'])) {
+        continue;
+      }
 
       // get & insert biblio author
       // ----------------------------------------------------------------------
