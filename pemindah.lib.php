@@ -44,10 +44,17 @@ class Pindah
     return $query->fetchAll();
   }
 
+  public function count($table)
+  {
+    $query = $this->db->query('SELECT count(*) FROM '.$table);
+    return $query->fetch();
+  }
+
   public function getByID($table, $id, $field = 'id')
   {
-    $query = $this->db->query('SELECT * FROM '.$table.' WHERE '.$field.'='.$id, PDO::FETCH_ASSOC);
-    return $query->fetchAll();
+    $query = $this->db->prepare('SELECT * FROM '.$table.' WHERE '.$field.'=?');
+    $query->execute(array($id));
+    return $query->fetchAll(PDO::FETCH_ASSOC);
   }
 
   public function getID($table, $field, $field_search, $string)
@@ -61,22 +68,60 @@ class Pindah
     return NULL;
   }
 
-  public function insertIgnore($tabel, $data)
+  public function insertIgnore($tabel, $data, $field_compare = null)
   {
-    $fields = '(';
-    $values = '(';
+    $fields = '';
+    $values = '';
     $array_value = array();
     foreach ($data as $key => $value) {
       $fields .= $key.',';
       $values .= '?,';
       $array_value[] = $value;
     }
-    $fields = substr_replace($fields, ')', -1);
-    $values = substr_replace($values, ')', -1);
-    $sth = $this->db->prepare('INSERT IGNORE INTO '.$tabel.' '.$fields.' VALUES '.$values);
-    if (!$sth->execute($array_value)) {
+    $fields = substr_replace($fields, '', -1);
+    $values = substr_replace($values, '', -1);
+    // check field_compare
+    if (!is_null($field_compare)) {
+      $sql_compare = 'SELECT '.$field_compare.' FROM '.$tabel.' WHERE '.$field_compare.'=?';
+      $sth = $this->db->prepare($sql_compare);
+      $sth->execute(array($data[$field_compare]));
+      if ($sth->rowCount() > 0) {
+        return;
+      }
+      $sql_compare = null;
+    }
+
+    $sth = $this->db->prepare('INSERT IGNORE INTO '.$tabel.' ('.$fields.') VALUES ('.$values.')');
+    if ($sth->execute($array_value)) {
+      return $this->db->lastInsertId();
+    } else {
       return FALSE;
     }
-    return $this->db->lastInsertId();
+  }
+
+  public static function debug($message)
+  {
+    echo PHP_EOL . $message;
+  }
+
+  public static function showLoading($count)
+  {
+    if ($count % 10 == 0) {
+      $index = ($count / 10) - 1;
+      if ($index % 70 == 0 || $index < 1) {
+        echo PHP_EOL;
+      }
+      if ($index < 840) {
+        echo Pindah::me($index);
+      } else {
+        echo '.';
+      }
+    }
+  }
+
+  public static function me($index)
+  {
+    $string = '===========================.L.O.A.D.I.N.G.============================......######..######...........##....######......######....######.........##......##..##.....................####......####....##......##.......##..........##...........####......##..##..##..##....##.................####......##.............##......##..##..##..##......####...............######..##.............##......##..##..##..##........######...............##..##.............##......##....##....##............##.......##......##..##......##.....##......##....##....##....##......##.........######..############...######..######......######....######.....======================================================================.............M.I.G.R.A.T.O.R.....BY.....I.D.O..A.L.I.T................======================================================================';
+    return $string[$index];
   }
 }
