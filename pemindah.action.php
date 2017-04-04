@@ -168,7 +168,7 @@ if (isset($_GET['data']) && !empty($_GET['data']) || isset($argv)) {
     $biblio_count = $obj_a->count('biblio')[0];
     //sleep(3);
     Pindah::debug('Data biblio sejumlah: ' . $biblio_count);
-    $limit = 840 * 10;
+    $limit = 840 * 10; // turunkan limit ini jika memori tidak mencukupi
     $loop_for = ceil($biblio_count / $limit);
     // collect last biblio_id
     $last_biblio_ids = array();
