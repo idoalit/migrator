@@ -12,6 +12,7 @@ class Pindah
   private $user = '';
   private $pass = '';
   private $db = null;
+  private $update = false;
 
   function __construct($config)
   {
@@ -32,6 +33,12 @@ class Pindah
     } catch (PDOException $e) {
       die(json_encode(array('outcome' => false, 'message' => 'Unable to connect. ' . $e)));
     }
+  }
+
+  public function setUpdate($update = true)
+  {
+    $this->update = $update;
+    Pindah::debug('Melakukan pemindahan dalam mode UPDATE');
   }
 
   public function get($table, $limit = 0, $offset = 0)
@@ -68,34 +75,72 @@ class Pindah
     return NULL;
   }
 
-  public function insertIgnore($tabel, $data, $field_compare = null)
+  private function isIgnored($table, $field)
+  {
+    $ignored['mst_author']    = array('author_id');
+    $ignored['mst_topic']     = array('topic_id');
+    $ignored['mst_gmd']       = array('gmd_id');
+    $ignored['mst_language']  = array('language_id');
+    $ignored['mst_place']     = array('place_id');
+    $ignored['mst_publisher'] = array('publisher_id');
+    $ignored['mst_coll_type'] = array('coll_type_id');
+    $ignored['biblio']        = array('biblio_id');
+    $ignored['item']          = array('item_id');
+
+    if ($this->update) {
+      foreach ($ignored as $key => $value) {
+        if ($key == $table && in_array($field, $ignored[$table])) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  public function insertIgnore($table, $data, $field_compare = null)
   {
     $fields = '';
     $values = '';
+    $update = '';
     $array_value = array();
     foreach ($data as $key => $value) {
+      if ($this->isIgnored($table, $key)) {
+        continue;
+      }
       $fields .= $key.',';
       $values .= '?,';
       $array_value[] = $value;
+      $update .= $key .'=\''.addslashes($value).'\',';
     }
     $fields = substr_replace($fields, '', -1);
     $values = substr_replace($values, '', -1);
-    // check field_compare
-    if (!is_null($field_compare)) {
-      $sql_compare = 'SELECT '.$field_compare.' FROM '.$tabel.' WHERE '.$field_compare.'=?';
-      $sth = $this->db->prepare($sql_compare);
-      $sth->execute(array($data[$field_compare]));
-      if ($sth->rowCount() > 0) {
-        return;
+    $update = substr_replace($update, '', -1);
+    if ($this->update) {
+      $sql = 'INSERT INTO '.$table.' ('.$fields.') VALUES ('.$values.') ON DUPLICATE KEY UPDATE ' . $update;
+      $sth = $this->db->prepare($sql);
+      if ($sth->execute($array_value)) {
+        return $this->db->lastInsertId();
+      } else {
+        return FALSE;
       }
-      $sql_compare = null;
-    }
-
-    $sth = $this->db->prepare('INSERT IGNORE INTO '.$tabel.' ('.$fields.') VALUES ('.$values.')');
-    if ($sth->execute($array_value)) {
-      return $this->db->lastInsertId();
     } else {
-      return FALSE;
+      // check field_compare
+      if (!is_null($field_compare)) {
+        $sql_compare = 'SELECT '.$field_compare.' FROM '.$table.' WHERE '.$field_compare.'=?';
+        $sth = $this->db->prepare($sql_compare);
+        $sth->execute(array($data[$field_compare]));
+        if ($sth->rowCount() > 0) {
+          return;
+        }
+        $sql_compare = null;
+      }
+
+      $sth = $this->db->prepare('INSERT IGNORE INTO '.$table.' ('.$fields.') VALUES ('.$values.')');
+      if ($sth->execute($array_value)) {
+        return $this->db->lastInsertId();
+      } else {
+        return FALSE;
+      }
     }
   }
 

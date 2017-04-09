@@ -44,6 +44,11 @@ if (isset($_GET['data']) && !empty($_GET['data']) || isset($argv)) {
     }
   }
 
+  // update mode
+  if (isset($modules['--update'])) {
+    $obj_b->setUpdate();
+  }
+
   // bibliography action
   if (isset($modules['bibliography'])) {
     Pindah::debug('Melakukan pemindahan data bibliografy');
@@ -194,21 +199,21 @@ if (isset($_GET['data']) && !empty($_GET['data']) || isset($argv)) {
         // publisher_id
         $publisher = $obj_a->getByID('mst_publisher', $_biblio['publisher_id'], 'publisher_id');
         if (count($publisher) > 0) {
-          $publisher_name = $publisher[0]['publisher_id'];
+          $publisher_name = $publisher[0]['publisher_name'];
           $_biblio['publisher_id'] = $obj_b->getID('mst_publisher', 'publisher_id', 'publisher_name', $publisher_name);
         }
 
         // language_id
         $language = $obj_a->getByID('mst_language', $_biblio['language_id'], 'language_id');
         if (count($language) > 0) {
-          $language_name = $language[0]['language_id'];
+          $language_name = $language[0]['language_name'];
           $_biblio['language_id'] = $obj_b->getID('mst_language', 'language_id', 'language_name', $language_name);
         }
 
         // publish_place_id
         $place = $obj_a->getByID('mst_place', $_biblio['publish_place_id'], 'place_id');
         if (count($place) > 0) {
-          $place_name = $place[0]['place_id'];
+          $place_name = $place[0]['place_name'];
           $_biblio['publish_place_id'] = $obj_b->getID('mst_place', 'place_id', 'place_name', $place_name);
         }
 
