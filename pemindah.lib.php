@@ -30,7 +30,7 @@ class Pindah
       $this->db = new PDO('mysql:host='.$this->host.';port='.$this->port.';dbname='.$this->name,
         $this->user, $this->pass, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
     } catch (PDOException $e) {
-      die(json_encode(array('outcome' => false, 'message' => 'Unable to connect')));
+      die(json_encode(array('outcome' => false, 'message' => 'Unable to connect. ' . $e)));
     }
   }
 

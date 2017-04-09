@@ -2,7 +2,9 @@
 
 require 'pemindah.lib.php';
 
-Pindah::debug('Pemindah mulai berjalan');
+// start
+$start = microtime(true);
+Pindah::debug('Pemindah mulai berjalan pada ' . date("Y-m-d H:i:s"));
 
 if (isset($_GET['data']) && !empty($_GET['data']) || isset($argv)) {
   if (isset($config['cli'])) {
@@ -175,7 +177,7 @@ if (isset($_GET['data']) && !empty($_GET['data']) || isset($argv)) {
     for ($i=0; $i < $loop_for; $i++) {
       $dari = ($i*$limit) + 1;
       $sampai = ($biblio_count < ($i+1)*$limit) ? $biblio_count : $dari + $limit - 1 ;
-      Pindah::debug('Memproses data biblio dari cantuman dari ' . $dari . ' sampai ' . $sampai . ' dari total ' . $biblio_count);
+      Pindah::debug('Memproses data biblio dari cantuman ke ' . $dari . ' sampai ' . $sampai . ' dari total ' . $biblio_count);
       $biblio = $obj_a->get('biblio', $limit, $i*$limit);
       $_return['count']['biblio'] = 0;
       $_return['count']['biblio_author'] = 0;
@@ -234,7 +236,16 @@ if (isset($_GET['data']) && !empty($_GET['data']) || isset($argv)) {
     foreach ($biblio_ids as $b_ID){
 
       if ($b_ID['new'] == '' || empty($b_ID['new']) || is_null($b_ID['new'])) {
-        continue;
+        // this is duplicate title
+        // get title
+        $_d_title = $obj_a->getID('biblio', 'title', 'biblio_id', $b_ID['old']);
+        if (is_null($_d_title)) {
+          continue;
+        }
+        $b_ID['new'] = $obj_b->getID('biblio', 'biblio_id', 'title', $_d_title);
+        if (is_null($b_ID['new'])) {
+          continue;
+        }
       }
 
       // get & insert biblio author
@@ -304,6 +315,10 @@ if (isset($_GET['data']) && !empty($_GET['data']) || isset($argv)) {
     if (empty($_return)) {
       $_return['status'] = 'OK';
     }
+    echo PHP_EOL;
+    Pindah::debug('Proses pemindahan selesai pada ' . date("Y-m-d H:i:s"));
+    $time_elapsed_secs = microtime(true) - $start;
+    Pindah::debug('Pemindahan memakan waktu ' . ($time_elapsed_secs/60) . ' menit');
     echo PHP_EOL;
     echo json_encode($_return);
   }
