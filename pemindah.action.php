@@ -179,15 +179,16 @@ if (isset($_GET['data']) && !empty($_GET['data']) || isset($argv)) {
     $loop_for = ceil($biblio_count / $limit);
     // collect last biblio_id
     $last_biblio_ids = array();
+    $_return['count']['biblio'] = 0;
+    $_return['count']['biblio_author'] = 0;
+    $_return['count']['biblio_topic'] = 0;
+    $_return['count']['item'] = 0;
     for ($i=0; $i < $loop_for; $i++) {
       $dari = ($i*$limit) + 1;
       $sampai = ($biblio_count < ($i+1)*$limit) ? $biblio_count : $dari + $limit - 1 ;
       Pindah::debug('Memproses data biblio dari cantuman ke ' . $dari . ' sampai ' . $sampai . ' dari total ' . $biblio_count);
+      // mengambil data biblio dari tabel asal
       $biblio = $obj_a->get('biblio', $limit, $i*$limit);
-      $_return['count']['biblio'] = 0;
-      $_return['count']['biblio_author'] = 0;
-      $_return['count']['biblio_topic'] = 0;
-      $_return['count']['item'] = 0;
       foreach ($biblio as $_biblio) {
         // get gmd_id
         $gmd = $obj_a->getByID('mst_gmd', $_biblio['gmd_id'], 'gmd_id');
@@ -222,7 +223,7 @@ if (isset($_GET['data']) && !empty($_GET['data']) || isset($argv)) {
         // reset biblio_id
         $_biblio['biblio_id'] = '';
         // get insert id
-        $_biblio_id = $obj_b->insertIgnore('biblio', $_biblio, 'title');
+        $_biblio_id = $obj_b->insertIgnore('biblio', $_biblio, 'title', 'biblio_id');
         $biblio_ids[] = array('old' => $biblio_id_old, 'new' => $_biblio_id);
         $_return['count']['biblio']++;
         Pindah::showLoading($_return['count']['biblio']);

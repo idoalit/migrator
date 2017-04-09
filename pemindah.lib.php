@@ -35,6 +35,11 @@ class Pindah
     }
   }
 
+public function getConnection()
+{
+  return $this->db;
+}
+
   public function setUpdate($update = true)
   {
     $this->update = $update;
@@ -97,7 +102,7 @@ class Pindah
     return false;
   }
 
-  public function insertIgnore($table, $data, $field_compare = null)
+  public function insertIgnore($table, $data, $field_compare = null, $id = null)
   {
     $fields = '';
     $values = '';
@@ -115,33 +120,33 @@ class Pindah
     $fields = substr_replace($fields, '', -1);
     $values = substr_replace($values, '', -1);
     $update = substr_replace($update, '', -1);
-    if ($this->update) {
-      $sql = 'INSERT INTO '.$table.' ('.$fields.') VALUES ('.$values.') ON DUPLICATE KEY UPDATE ' . $update;
-      $sth = $this->db->prepare($sql);
-      if ($sth->execute($array_value)) {
-        return $this->db->lastInsertId();
-      } else {
-        return FALSE;
-      }
-    } else {
-      // check field_compare
-      if (!is_null($field_compare)) {
-        $sql_compare = 'SELECT '.$field_compare.' FROM '.$table.' WHERE '.$field_compare.'=?';
-        $sth = $this->db->prepare($sql_compare);
-        $sth->execute(array($data[$field_compare]));
-        if ($sth->rowCount() > 0) {
-          return;
-        }
-        $sql_compare = null;
-      }
 
-      $sth = $this->db->prepare('INSERT IGNORE INTO '.$table.' ('.$fields.') VALUES ('.$values.')');
-      if ($sth->execute($array_value)) {
-        return $this->db->lastInsertId();
-      } else {
-        return FALSE;
+    // check field_compare
+    if (!is_null($field_compare)) {
+      $sql_compare = 'SELECT * FROM '.$table.' WHERE '.$field_compare.'=?';
+      $sth = $this->db->prepare($sql_compare);
+      $sth->execute(array($data[$field_compare]));
+      if ($sth->rowCount() > 0) {
+        $_result = $sth->fetch(PDO::FETCH_ASSOC);
+        if ($this->update && !is_null($id)) {
+          $sql = 'UPDATE '.$table.' SET ' . $update . ' WHERE ' . $id.'='.$_result[$id];
+          $sth = $this->db->prepare($sql);
+          if ($sth->execute(array($data[$field_compare]))) {
+            return $this->db->lastInsertId();
+          }
+        }
+        return $_result[0];
       }
+      $sql_compare = null;
     }
+
+    $sth = $this->db->prepare('INSERT IGNORE INTO '.$table.' ('.$fields.') VALUES ('.$values.')');
+    if ($sth->execute($array_value)) {
+      return $this->db->lastInsertId();
+    } else {
+      return FALSE;
+    }
+
   }
 
   public static function debug($message)
@@ -168,5 +173,5 @@ class Pindah
   {
     $string = '===========================.L.O.A.D.I.N.G.============================......######..######...........##....######......######....######.........##......##..##.....................####......####....##......##.......##..........##...........####......##..##..##..##....##.................####......##.............##......##..##..##..##......####...............######..##.............##......##..##..##..##........######...............##..##.............##......##....##....##............##.......##......##..##......##.....##......##....##....##....##......##.........######..############...######..######......######....######.....======================================================================.............M.I.G.R.A.T.O.R.....BY.....I.D.O..A.L.I.T................======================================================================';
     return $string[$index];
-  } 
+  }
 }
